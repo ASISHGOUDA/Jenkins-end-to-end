@@ -51,18 +51,31 @@ pipeline {
             GIT_USER_NAME = "ASISHGOUDA"
         }
         steps {
-            withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
-                sh '''
-                    git config user.email "gouda0682@gmail.com"
-                    git config user.name "Asishkumar"
-                    BUILD_NUMBER=${BUILD_NUMBER}
-                    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-                    git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-                    git commit -m "Update deployment image to version ${BUILD_NUMBER}"
-                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
-                '''
-            }
-        }
+    withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+        sh '''
+            git config user.email "gouda0682@gmail.com"
+            git config user.name "Asishkumar"
+            BUILD_NUMBER=${BUILD_NUMBER}
+            
+            # Replace the image tag in the deployment YAML
+            sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+            
+            # Add changes to the git staging area
+            git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+            
+            # Check if there are any changes to commit
+            if git diff --cached --exit-code; then
+                echo "No changes to commit."
+            else
+                # Commit changes if there are any
+                git commit -m "Update deployment image to version ${BUILD_NUMBER}"
+                # Push the changes to the GitHub repository
+                git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+            fi
+        '''
+    }
+}
+
     }
   }
 }
